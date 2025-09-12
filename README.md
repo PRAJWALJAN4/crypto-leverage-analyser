@@ -1,1 +1,1 @@
-# crypto-leverage-calculator
+# crypto-Trade-analyser
