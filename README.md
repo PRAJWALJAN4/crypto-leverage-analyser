@@ -1,4 +1,3 @@
-# crypto-Trade-analyser
 
 # Crypto Leverage Trading Calculator
 
