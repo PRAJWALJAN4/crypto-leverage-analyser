@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>PRAJWAL JANA'S Crypto Futures Trading Calculator</title>
     <style>
         * {
@@ -347,19 +347,23 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="entryPrice">Entry Price (USD) <span id="priceStatus" class="live-indicator"></span></label>
-                    <input type="number" id="entryPrice" readonly placeholder="Loading live price...">
+                    <label>
+                        <input type="checkbox" id="manualPriceToggle" />
+                        Enter Current Price Manually
+                    </label>
+                    <input type="number" id="entryPrice" readonly placeholder="Loading live price..." style="margin-top: 8px;" />
+                    <span id="priceStatus" class="live-indicator"></span>
                 </div>
             </div>
             
             <div class="form-row">
                 <div class="form-group">
                     <label for="capitalUSD">Capital (USD)</label>
-                    <input type="number" id="capitalUSD" placeholder="Enter capital in USD" step="0.01">
+                    <input type="number" id="capitalUSD" placeholder="Enter capital in USD" step="0.01" />
                 </div>
                 <div class="form-group">
                     <label for="capitalINR">Capital (INR)</label>
-                    <input type="number" id="capitalINR" placeholder="Enter capital in INR" step="0.01">
+                    <input type="number" id="capitalINR" placeholder="Enter capital in INR" step="0.01" />
                 </div>
             </div>
             
@@ -396,7 +400,7 @@
                         <option value="200">200x</option>
                         <option value="custom">Custom</option>
                     </select>
-                    <input type="number" id="customLeverage" placeholder="Enter custom leverage (1-200)" min="1" max="200" style="display: none; margin-top: 10px;">
+                    <input type="number" id="customLeverage" placeholder="Enter custom leverage (1-200)" min="1" max="200" style="display: none; margin-top: 10px;" />
                 </div>
                 <div class="form-group">
                     <div id="leverageWarning" style="display: none;">
@@ -441,256 +445,376 @@
                         <tr>
                             <th>Scenario Type</th>
                             <th>Price Change</th>
+                            <th>Real USD Movement</th>
                             <th>Exit Price (USD)</th>
                             <th>P&L (USD)</th>
                             <th>P&L (INR)</th>
                             <th>ROI %</th>
                         </tr>
                     </thead>
-                    <tbody id="scenariosTableBody">
-                        <!-- Scenarios will be populated here -->
-                    </tbody>
+                    <tbody id="scenariosTableBody"></tbody>
                 </table>
             </div>
         </div>
     </div>
+<script>
+    let currentExchangeRate = 83.25;
+    let isShortPosition = false;
+    let isMakerOrder = false;
+    let currentLeverageValue = 10;
+    let entryPrice = 0;
+    let capitalUSD = 0;
 
-    <script>
-        // Global variables
-        let currentExchangeRate = 83.25;
-        let isShortPosition = false;
-        let isMakerOrder = false;
-        let currentLeverageValue = 10;
-        let entryPrice = 0;
-        let capitalUSD = 0;
-        
-        // Contract symbols mapping
-        const contractSymbols = {
-            'bitcoin': 'BTC',
-            'ethereum': 'ETH',
-            'binancecoin': 'BNB',
-            'solana': 'SOL',
-            'ripple': 'XRP',
-            'cardano': 'ADA',
-            'polkadot': 'DOT',
-            'chainlink': 'LINK',
-            'avalanche-2': 'AVAX',
-            'dogecoin': 'DOGE'
-        };
-        
-        // DOM elements
-        const elements = {
-            contract: document.getElementById('contract'),
-            entryPrice: document.getElementById('entryPrice'),
-            priceStatus: document.getElementById('priceStatus'),
-            capitalUSD: document.getElementById('capitalUSD'),
-            capitalINR: document.getElementById('capitalINR'),
-            directionToggle: document.getElementById('directionToggle'),
-            orderTypeToggle: document.getElementById('orderTypeToggle'),
-            leverage: document.getElementById('leverage'),
-            customLeverage: document.getElementById('customLeverage'),
-            leverageWarning: document.getElementById('leverageWarning'),
-            results: document.getElementById('results'),
-            currentLeverage: document.getElementById('currentLeverage'),
-            positionSize: document.getElementById('positionSize'),
-            notionalValue: document.getElementById('notionalValue'),
-            marginRequired: document.getElementById('marginRequired'),
-            tradingFee: document.getElementById('tradingFee'),
-            liquidationPrice: document.getElementById('liquidationPrice'),
-            scenariosTableBody: document.getElementById('scenariosTableBody'),
-            exchangeRateDisplay: document.getElementById('exchangeRateDisplay')
-        };
-        
-        // Fetch live exchange rate
-        async function fetchExchangeRate() {
-            try {
-                const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
-                const data = await response.json();
-                currentExchangeRate = data.usd.inr;
-            } catch (error) {
-                console.log('Using fallback exchange rate');
-            }
-            elements.exchangeRateDisplay.textContent = `1 USD = ₹${currentExchangeRate.toFixed(2)}`;
+    const contractSymbols = {
+        'bitcoin': 'BTC',
+        'ethereum': 'ETH',
+        'binancecoin': 'BNB',
+        'solana': 'SOL',
+        'ripple': 'XRP',
+        'cardano': 'ADA',
+        'polkadot': 'DOT',
+        'chainlink': 'LINK',
+        'avalanche-2': 'AVAX',
+        'dogecoin': 'DOGE'
+    };
+
+    const elements = {
+        contract: document.getElementById('contract'),
+        entryPrice: document.getElementById('entryPrice'),
+        priceStatus: document.getElementById('priceStatus'),
+        capitalUSD: document.getElementById('capitalUSD'),
+        capitalINR: document.getElementById('capitalINR'),
+        directionToggle: document.getElementById('directionToggle'),
+        orderTypeToggle: document.getElementById('orderTypeToggle'),
+        leverage: document.getElementById('leverage'),
+        customLeverage: document.getElementById('customLeverage'),
+        leverageWarning: document.getElementById('leverageWarning'),
+        results: document.getElementById('results'),
+        currentLeverage: document.getElementById('currentLeverage'),
+        positionSize: document.getElementById('positionSize'),
+        notionalValue: document.getElementById('notionalValue'),
+        marginRequired: document.getElementById('marginRequired'),
+        tradingFee: document.getElementById('tradingFee'),
+        liquidationPrice: document.getElementById('liquidationPrice'),
+        scenariosTableBody: document.getElementById('scenariosTableBody'),
+        exchangeRateDisplay: document.getElementById('exchangeRateDisplay'),
+        manualPriceToggle: document.getElementById('manualPriceToggle')
+    };
+
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+            const data = await response.json();
+            currentExchangeRate = data.usd.inr;
+        } catch {
         }
-        
-        // Fetch live crypto prices
-        async function fetchCryptoPrices() {
-            try {
-                const contractId = elements.contract.value;
-                const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${contractId}&vs_currencies=usd`);
-                const data = await response.json();
-                entryPrice = data[contractId].usd;
-                elements.entryPrice.value = entryPrice.toFixed(2);
-                elements.priceStatus.style.background = '#4ecdc4';
-            } catch (error) {
-                elements.priceStatus.style.background = '#ff6b6b';
-                console.log('Price fetch error:', error);
-            }
+        elements.exchangeRateDisplay.textContent = `1 USD = ₹${currentExchangeRate.toFixed(2)}`;
+    }
+
+    async function fetchCryptoPrices() {
+        if (elements.manualPriceToggle.checked) return;
+        elements.priceStatus.textContent = '';
+        elements.priceStatus.classList.add('live-indicator');
+        try {
+            const contractId = elements.contract.value;
+            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${contractId}&vs_currencies=usd`);
+            const data = await response.json();
+            entryPrice = data[contractId].usd;
+            elements.entryPrice.value = entryPrice.toFixed(2);
+            elements.priceStatus.textContent = '';
+            elements.priceStatus.classList.add('live-indicator');
+        } catch {
+            elements.priceStatus.textContent = '⚠ Error';
+            elements.priceStatus.classList.remove('live-indicator');
+        }
+        calculateAndDisplay();
+    }
+
+    function syncCapitalUSD() {
+        capitalUSD = parseFloat(elements.capitalUSD.value) || 0;
+        elements.capitalINR.value = (capitalUSD * currentExchangeRate).toFixed(2);
+        calculateAndDisplay();
+    }
+
+    function syncCapitalINR() {
+        const val = parseFloat(elements.capitalINR.value) || 0;
+        capitalUSD = val / currentExchangeRate;
+        elements.capitalUSD.value = capitalUSD.toFixed(2);
+        calculateAndDisplay();
+    }
+
+    function toggleDirection() {
+        isShortPosition = !isShortPosition;
+        elements.directionToggle.classList.toggle('active', isShortPosition);
+        calculateAndDisplay();
+    }
+
+    function toggleOrderType() {
+        isMakerOrder = !isMakerOrder;
+        elements.orderTypeToggle.classList.toggle('active', isMakerOrder);
+        calculateAndDisplay();
+    }
+
+    function handleLeverageChange() {
+        const value = elements.leverage.value;
+        if (value === 'custom') {
+            elements.customLeverage.style.display = 'block';
+            currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
+        } else {
+            elements.customLeverage.style.display = 'none';
+            currentLeverageValue = parseFloat(value);
+        }
+        elements.leverageWarning.style.display = currentLeverageValue >= 50 ? 'block' : 'none';
+        calculateAndDisplay();
+    }
+
+    elements.customLeverage.addEventListener('input', () => {
+        if (elements.leverage.value === 'custom') {
+            currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
+            elements.leverageWarning.style.display = currentLeverageValue >= 50 ? 'block' : 'none';
             calculateAndDisplay();
         }
-        
-        // Sync USD and INR inputs
-        function syncCapitalUSD() {
-            capitalUSD = parseFloat(elements.capitalUSD.value) || 0;
-            elements.capitalINR.value = (capitalUSD * currentExchangeRate).toFixed(2);
+    });
+
+    elements.manualPriceToggle.addEventListener('change', () => {
+        if (elements.manualPriceToggle.checked) {
+            elements.entryPrice.readOnly = false;
+            elements.priceStatus.textContent = 'Manual Input';
+            elements.priceStatus.classList.remove('live-indicator');
+        } else {
+            elements.entryPrice.readOnly = true;
+            elements.priceStatus.textContent = '';
+            elements.priceStatus.classList.add('live-indicator');
+            fetchCryptoPrices();
+        }
+        calculateAndDisplay();
+    });
+
+    elements.entryPrice.addEventListener('input', () => {
+        if (elements.manualPriceToggle.checked) {
+            entryPrice = parseFloat(elements.entryPrice.value) || 0;
             calculateAndDisplay();
         }
-        
-        function syncCapitalINR() {
-            const capitalINR = parseFloat(elements.capitalINR.value) || 0;
-            capitalUSD = capitalINR / currentExchangeRate;
-            elements.capitalUSD.value = capitalUSD.toFixed(2);
-            calculateAndDisplay();
-        }
-        
-        // Toggle position direction
-        function toggleDirection() {
-            isShortPosition = !isShortPosition;
-            elements.directionToggle.classList.toggle('active', isShortPosition);
-            calculateAndDisplay();
-        }
-        
-        // Toggle order type
-        function toggleOrderType() {
-            isMakerOrder = !isMakerOrder;
-            elements.orderTypeToggle.classList.toggle('active', isMakerOrder);
-            calculateAndDisplay();
-        }
-        
-        // Handle leverage changes
-        function handleLeverageChange() {
-            const leverageValue = elements.leverage.value;
-            if (leverageValue === 'custom') {
-                elements.customLeverage.style.display = 'block';
-                currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
-            } else {
-                elements.customLeverage.style.display = 'none';
-                currentLeverageValue = parseFloat(leverageValue);
-            }
-            
-            // Show warning for high leverage
-            if (currentLeverageValue >= 50) {
-                elements.leverageWarning.style.display = 'block';
-            } else {
-                elements.leverageWarning.style.display = 'none';
-            }
-            
-            calculateAndDisplay();
-        }
-        
-        // Main calculation function
-        function calculateAndDisplay() {
-            // Update exchange rate display
-            fetchExchangeRate();
-            
-            if (!capitalUSD || !entryPrice || !currentLeverageValue) {
-                elements.results.style.display = 'none';
-                return;
-            }
-            
-            // Calculate position details
-            const positionValue = capitalUSD * currentLeverageValue;
-            const positionSizeTokens = positionValue / entryPrice;
-            const feeRate = isMakerOrder ? 0.0002 : 0.0005; // 0.02% for maker, 0.05% for taker
-            const tradingFeeUSD = positionValue * feeRate;
-            const marginRequiredUSD = capitalUSD;
-            
-            // Calculate liquidation price (approximate)
-            const liquidationBuffer = (1 / currentLeverageValue) * 0.9; // 90% of max loss before liquidation
-            const liquidationPrice = isShortPosition 
-                ? entryPrice * (1 + liquidationBuffer)
-                : entryPrice * (1 - liquidationBuffer);
-            
-            // Update results display
-            elements.currentLeverage.textContent = `${currentLeverageValue}x`;
-            elements.positionSize.textContent = `${positionSizeTokens.toFixed(6)} ${contractSymbols[elements.contract.value]}`;
-            elements.notionalValue.innerHTML = `$${positionValue.toLocaleString()}<span class="currency-display">₹${(positionValue * currentExchangeRate).toLocaleString()}</span>`;
-            elements.marginRequired.innerHTML = `$${marginRequiredUSD.toFixed(2)}<span class="currency-display">₹${(marginRequiredUSD * currentExchangeRate).toFixed(2)}</span>`;
-            elements.tradingFee.innerHTML = `$${tradingFeeUSD.toFixed(2)}<span class="currency-display">₹${(tradingFeeUSD * currentExchangeRate).toFixed(2)}</span>`;
-            elements.liquidationPrice.textContent = `$${liquidationPrice.toFixed(2)} (${isShortPosition ? '+' : '-'}${(liquidationBuffer * 100).toFixed(2)}%)`;
-            
-            elements.results.style.display = 'block';
-            
-            // Generate scenarios
-            generateScenarios(positionSizeTokens, tradingFeeUSD);
-        }
-        
-        // Generate profit/loss scenarios
-        function generateScenarios(positionSize, tradingFee) {
-            let scenariosHTML = '';
-            
-            // Generate scenarios for 1% to 10%
-            for (let percentage = 1; percentage <= 10; percentage++) {
-                // Positive scenario (profit for long, loss for short)
-                const positiveChange = percentage / 100;
-                const positiveExitPrice = entryPrice * (1 + positiveChange);
-                const positivePnL = isShortPosition 
-                    ? (entryPrice - positiveExitPrice) * positionSize - tradingFee
-                    : (positiveExitPrice - entryPrice) * positionSize - tradingFee;
-                const positiveROI = (positivePnL / capitalUSD) * 100;
-                
-                // Negative scenario (loss for long, profit for short)
-                const negativeChange = -percentage / 100;
-                const negativeExitPrice = entryPrice * (1 + negativeChange);
-                const negativePnL = isShortPosition 
-                    ? (entryPrice - negativeExitPrice) * positionSize - tradingFee
-                    : (negativeExitPrice - entryPrice) * positionSize - tradingFee;
-                const negativeROI = (negativePnL / capitalUSD) * 100;
-                
-                // Determine scenario labels
-                const positiveLabel = isShortPosition 
-                    ? (positivePnL >= 0 ? 'Stop Loss (Short)' : 'Stop Loss (Short)')
-                    : (positivePnL >= 0 ? 'Take Profit' : 'Take Profit');
-                const negativeLabel = isShortPosition 
-                    ? (negativePnL >= 0 ? 'Take Profit (Short)' : 'Take Profit (Short)')
-                    : (negativePnL >= 0 ? 'Stop Loss' : 'Stop Loss');
-                
-                // Add positive scenario
-                scenariosHTML += `
-                    <tr>
-                        <td>${positiveLabel}</td>
-                        <td>+${percentage}%</td>
-                        <td>$${positiveExitPrice.toFixed(2)}</td>
-                        <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">$${positivePnL.toFixed(2)}</td>
-                        <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">₹${(positivePnL * currentExchangeRate).toFixed(2)}</td>
-                        <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">${positiveROI.toFixed(2)}%</td>
-                    </tr>
-                `;
-                
-                // Add negative scenario
-                scenariosHTML += `
-                    <tr>
-                        <td>${negativeLabel}</td>
-                        <td>-${percentage}%</td>
-                        <td>$${negativeExitPrice.toFixed(2)}</td>
-                        <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">$${negativePnL.toFixed(2)}</td>
-                        <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">₹${(negativePnL * currentExchangeRate).toFixed(2)}</td>
-                        <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">${negativeROI.toFixed(2)}%</td>
-                    </tr>
-                `;
-            }
-            
-            elements.scenariosTableBody.innerHTML = scenariosHTML;
-        }
-        
-        // Event listeners
-        elements.contract.addEventListener('change', fetchCryptoPrices);
-        elements.capitalUSD.addEventListener('input', syncCapitalUSD);
-        elements.capitalINR.addEventListener('input', syncCapitalINR);
-        elements.directionToggle.addEventListener('click', toggleDirection);
-        elements.orderTypeToggle.addEventListener('click', toggleOrderType);
-        elements.leverage.addEventListener('change', handleLeverageChange);
-        elements.customLeverage.addEventListener('input', handleLeverageChange);
-        
-        // Initialize the calculator
+    });
+
+    function calculateAndDisplay() {
         fetchExchangeRate();
-        fetchCryptoPrices();
-        
-        // Auto-refresh prices every 30 seconds
-        setInterval(fetchCryptoPrices, 30000);
-        
-        // Auto-refresh exchange rate every 60 seconds
-        setInterval(fetchExchangeRate, 60000);
-    </script>
+
+        if (!capitalUSD || !entryPrice || !currentLeverageValue) {
+            elements.results.style.display = 'none';
+            elements.scenariosTableBody.innerHTML = '';
+            return;
+        }
+
+        const positionValue = capitalUSD * currentLeverageValue;
+        const positionSizeTokens = positionValue / entryPrice;
+        const feeRate = isMakerOrder ? 0.0002 : 0.0005; 
+        const tradingFeeUSD = positionValue * feeRate;
+        const marginRequiredUSD = capitalUSD;
+
+        const liquidationBuffer = (1 / currentLeverageValue) * 0.9;
+        const liquidationPrice = isShortPosition 
+            ? entryPrice * (1 + liquidationBuffer)
+            : entryPrice * (1 - liquidationBuffer);
+
+        elements.currentLeverage.textContent = `${currentLeverageValue}x`;
+        elements.positionSize.textContent = `${positionSizeTokens.toFixed(6)} ${contractSymbols[elements.contract.value]}`;
+        elements.notionalValue.innerHTML = `$${positionValue.toLocaleString()}<span class="currency-display">₹${(positionValue * currentExchangeRate).toLocaleString()}</span>`;
+        elements.marginRequired.innerHTML = `$${marginRequiredUSD.toFixed(2)}<span class="currency-display">₹${(marginRequiredUSD * currentExchangeRate).toFixed(2)}</span>`;
+        elements.tradingFee.innerHTML = `$${tradingFeeUSD.toFixed(2)}<span class="currency-display">₹${(tradingFeeUSD * currentExchangeRate).toFixed(2)}</span>`;
+        elements.liquidationPrice.textContent = `$${liquidationPrice.toFixed(2)} (${isShortPosition ? '+' : '-'}${(liquidationBuffer * 100).toFixed(2)}%)`;
+
+        elements.results.style.display = 'block';
+
+        generateScenarios(positionSizeTokens, tradingFeeUSD);
+    }
+
+    function generateScenarios(positionSize, tradingFee) {
+        let scenariosHTML = '';
+        for (let percentage = 1; percentage <= 10; percentage++) {
+            // Positive price change
+            let positiveChange = percentage / 100;
+            let positiveExitPrice = isShortPosition ? entryPrice * (1 - positiveChange) : entryPrice * (1 + positiveChange);
+            let positivePnL = isShortPosition 
+                ? (entryPrice - positiveExitPrice) * positionSize - tradingFee
+                : (positiveExitPrice - entryPrice) * positionSize - tradingFee;
+            let positiveROI = (positivePnL / capitalUSD) * 100;
+
+            // Real USD Movement
+            let posUsdMove = positiveExitPrice - entryPrice;
+            let posUsdMoveDisp = (posUsdMove > 0 ? '+' : '') + posUsdMove.toFixed(2);
+
+            // Negative price change
+            let negativeChange = -percentage / 100;
+            let negativeExitPrice = isShortPosition ? entryPrice * (1 - negativeChange) : entryPrice * (1 + negativeChange);
+            let negativePnL = isShortPosition 
+                ? (entryPrice - negativeExitPrice) * positionSize - tradingFee
+                : (negativeExitPrice - entryPrice) * positionSize - tradingFee;
+            let negativeROI = (negativePnL / capitalUSD) * 100;
+
+            let negUsdMove = negativeExitPrice - entryPrice;
+            let negUsdMoveDisp = (negUsdMove > 0 ? '+' : '') + negUsdMove.toFixed(2);
+
+            let positiveLabel = isShortPosition ? 'Take Profit (Short)' : 'Take Profit';
+            let negativeLabel = isShortPosition ? 'Stop Loss (Short)' : 'Stop Loss';
+
+            scenariosHTML += `
+                <tr>
+                    <td>${positiveLabel}</td>
+                    <td>+${percentage}%</td>
+                    <td>${posUsdMoveDisp}</td>
+                    <td>$${positiveExitPrice.toFixed(2)}</td>
+                    <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">$${positivePnL.toFixed(2)}</td>
+                    <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">₹${(positivePnL * currentExchangeRate).toFixed(2)}</td>
+                    <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">${positiveROI.toFixed(2)}%</td>
+                </tr>
+                <tr>
+                    <td>${negativeLabel}</td>
+                    <td>-${percentage}%</td>
+                    <td>${negUsdMoveDisp}</td>
+                    <td>$${negativeExitPrice.toFixed(2)}</td>
+                    <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">$${negativePnL.toFixed(2)}</td>
+                    <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">₹${(negativePnL * currentExchangeRate).toFixed(2)}</td>
+                    <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">${negativeROI.toFixed(2)}%</td>
+                </tr>
+            `;
+        }
+        elements.scenariosTableBody.innerHTML = scenariosHTML;
+    }
+
+    // Event listeners
+    elements.contract.addEventListener('change', () => {
+        if (!elements.manualPriceToggle.checked) fetchCryptoPrices();
+        else calculateAndDisplay();
+    });
+    elements.capitalUSD.addEventListener('input', () => {
+        capitalUSD = parseFloat(elements.capitalUSD.value) || 0;
+        elements.capitalINR.value = (capitalUSD * currentExchangeRate).toFixed(2);
+        calculateAndDisplay();
+    });
+    elements.capitalINR.addEventListener('input', () => {
+        const val = parseFloat(elements.capitalINR.value) || 0;
+        capitalUSD = val / currentExchangeRate;
+        elements.capitalUSD.value = capitalUSD.toFixed(2);
+        calculateAndDisplay();
+    });
+    elements.directionToggle.addEventListener('click', () => {
+        isShortPosition = !isShortPosition;
+        elements.directionToggle.classList.toggle('active', isShortPosition);
+        calculateAndDisplay();
+    });
+    elements.orderTypeToggle.addEventListener('click', () => {
+        isMakerOrder = !isMakerOrder;
+        elements.orderTypeToggle.classList.toggle('active', isMakerOrder);
+        calculateAndDisplay();
+    });
+    elements.leverage.addEventListener('change', () => {
+        const value = elements.leverage.value;
+        if (value === 'custom') {
+            elements.customLeverage.style.display = 'block';
+            currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
+        } else {
+            elements.customLeverage.style.display = 'none';
+            currentLeverageValue = parseFloat(value);
+        }
+        elements.leverageWarning.style.display = currentLeverageValue >= 50 ? 'block' : 'none';
+        calculateAndDisplay();
+    });
+    elements.customLeverage.addEventListener('input', () => {
+        if (elements.leverage.value === 'custom') {
+            currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
+            elements.leverageWarning.style.display = currentLeverageValue >= 50 ? 'block' : 'none';
+            calculateAndDisplay();
+        }
+    });
+    elements.manualPriceToggle.addEventListener('change', () => {
+        if (elements.manualPriceToggle.checked) {
+            elements.entryPrice.readOnly = false;
+            elements.priceStatus.textContent = 'Manual Input';
+            elements.priceStatus.classList.remove('live-indicator');
+        } else {
+            elements.entryPrice.readOnly = true;
+            elements.priceStatus.textContent = '';
+            elements.priceStatus.classList.add('live-indicator');
+            fetchCryptoPrices();
+        }
+        calculateAndDisplay();
+    });
+    elements.entryPrice.addEventListener('input', () => {
+        if (elements.manualPriceToggle.checked) {
+            entryPrice = parseFloat(elements.entryPrice.value) || 0;
+            calculateAndDisplay();
+        }
+    });
+
+    async function fetchCryptoPrices() {
+        if (elements.manualPriceToggle.checked) return;
+        elements.priceStatus.textContent = '';
+        elements.priceStatus.classList.add('live-indicator');
+        try {
+            const contractId = elements.contract.value;
+            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${contractId}&vs_currencies=usd`);
+            const data = await response.json();
+            entryPrice = data[contractId].usd;
+            elements.entryPrice.value = entryPrice.toFixed(2);
+            elements.priceStatus.textContent = '';
+            elements.priceStatus.classList.add('live-indicator');
+        } catch {
+            elements.priceStatus.textContent = '⚠ Error';
+            elements.priceStatus.classList.remove('live-indicator');
+        }
+        calculateAndDisplay();
+    }
+
+    async function fetchExchangeRate() {
+        try {
+            const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+            const data = await response.json();
+            currentExchangeRate = data.usd.inr;
+        } catch {
+        }
+        elements.exchangeRateDisplay.textContent = `1 USD = ₹${currentExchangeRate.toFixed(2)}`;
+    }
+
+    function calculateAndDisplay() {
+        fetchExchangeRate();
+
+        if (!capitalUSD || !entryPrice || !currentLeverageValue) {
+            elements.results.style.display = 'none';
+            elements.scenariosTableBody.innerHTML = '';
+            return;
+        }
+
+        const positionValue = capitalUSD * currentLeverageValue;
+        const positionSizeTokens = positionValue / entryPrice;
+        const feeRate = isMakerOrder ? 0.0002 : 0.0005; 
+        const tradingFeeUSD = positionValue * feeRate;
+        const marginRequiredUSD = capitalUSD;
+
+        const liquidationBuffer = (1 / currentLeverageValue) * 0.9;
+        const liquidationPrice = isShortPosition 
+            ? entryPrice * (1 + liquidationBuffer)
+            : entryPrice * (1 - liquidationBuffer);
+
+        elements.currentLeverage.textContent = `${currentLeverageValue}x`;
+        elements.positionSize.textContent = `${positionSizeTokens.toFixed(6)} ${contractSymbols[elements.contract.value]}`;
+        elements.notionalValue.innerHTML = `$${positionValue.toLocaleString()}<span class="currency-display">₹${(positionValue * currentExchangeRate).toLocaleString()}</span>`;
+        elements.marginRequired.innerHTML = `$${marginRequiredUSD.toFixed(2)}<span class="currency-display">₹${(marginRequiredUSD * currentExchangeRate).toFixed(2)}</span>`;
+        elements.tradingFee.innerHTML = `$${tradingFeeUSD.toFixed(2)}<span class="currency-display">₹${(tradingFeeUSD * currentExchangeRate).toFixed(2)}</span>`;
+        elements.liquidationPrice.textContent = `$${liquidationPrice.toFixed(2)} (${isShortPosition ? '+' : '-'}${(liquidationBuffer * 100).toFixed(2)}%)`;
+
+        elements.results.style.display = 'block';
+
+        generateScenarios(positionSizeTokens, tradingFeeUSD);
+    }
+
+    // Initialize page
+    fetchExchangeRate();
+    fetchCryptoPrices();
+
+    // Auto refresh intervals
+    setInterval(fetchCryptoPrices, 30000);
+    setInterval(fetchExchangeRate, 60000);
+</script>
 </body>
 </html>
