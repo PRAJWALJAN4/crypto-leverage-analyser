@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PRAJWAL JANA'S Crypto Futures Trading Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .brand-title {
+            font-size: 1.8rem;
+            color: #4ecdc4;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            border-bottom: 3px solid #4ecdc4;
+            display: inline-block;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .subtitle {
+            opacity: 0.8;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .exchange-rate-display {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
+        
+        .rate-label {
+            color: #4ecdc4;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .rate-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            color: #4ecdc4;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+        
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+        }
+        
+        .form-group select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            padding-right: 40px;
+        }
+        
+        .form-group select option {
+            background: #2c2c54;
+            color: #fff;
+            padding: 10px;
+        }
+        
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 8px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            background: #4ecdc4;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active::after {
+            left: 32px;
+        }
+        
+        .toggle-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        .results {
+            margin-top: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .result-row:last-child {
+            border-bottom: none;
+        }
+        
+        .result-label {
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+        
+        .result-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            text-align: right;
+        }
+        
+        .scenarios-container {
+            margin-top: 30px;
+        }
+        
+        .scenarios-container h2 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        
+        .scenarios-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .scenarios-table th {
+            background: rgba(78, 205, 196, 0.2);
+            padding: 15px;
+            color: #4ecdc4;
+            font-weight: 600;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        
+        .scenarios-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+        
+        .scenarios-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .profit {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+        
+        .loss {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+        
+        .currency-display {
+            opacity: 0.7;
+            font-size: 0.85rem;
+            display: block;
+            margin-top: 2px;
+        }
+        
+        .warning {
+            background: rgba(255, 193, 7, 0.1);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            color: #ffc107;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .scenarios-table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            .calculator {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .brand-title {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand-title">PRAJWAL JANA'S</div>
+            <h1>Crypto Futures Trading Calculator</h1>
+            <p class="subtitle">Advanced trading calculator with Long/Short positions, live prices, and comprehensive P&L scenarios</p>
+        </div>
+        
+        <div class="calculator">
+            <div class="exchange-rate-display">
+                <div class="rate-label">Live USD → INR Exchange Rate</div>
+                <div class="rate-value" id="exchangeRateDisplay">Loading...</div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contract">Select Contract</label>
+                    <select id="contract">
+                        <option value="bitcoin">BTCUSD</option>
+                        <option value="ethereum">ETHUSD</option>
+                        <option value="binancecoin">BNBUSD</option>
+                        <option value="solana">SOLUSD</option>
+                        <option value="ripple">XRPUSD</option>
+                        <option value="cardano">ADAUSD</option>
+                        <option value="polkadot">DOTUSD</option>
+                        <option value="chainlink">LINKUSD</option>
+                        <option value="avalanche-2">AVAXUSD</option>
+                        <option value="dogecoin">DOGEUSD</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="entryPrice">Entry Price (USD) <span id="priceStatus" class="live-indicator"></span></label>
+                    <input type="number" id="entryPrice" readonly placeholder="Loading live price...">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="capitalUSD">Capital (USD)</label>
+                    <input type="number" id="capitalUSD" placeholder="Enter capital in USD" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="capitalINR">Capital (INR)</label>
+                    <input type="number" id="capitalINR" placeholder="Enter capital in INR" step="0.01">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Position Direction</label>
+                    <div class="toggle-container">
+                        <span class="toggle-label">Long</span>
+                        <div class="toggle-switch" id="directionToggle"></div>
+                        <span class="toggle-label">Short</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Order Type</label>
+                    <div class="toggle-container">
+                        <span class="toggle-label">Taker (0.05%)</span>
+                        <div class="toggle-switch" id="orderTypeToggle"></div>
+                        <span class="toggle-label">Maker (0.02%)</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="leverage">Leverage</label>
+                    <select id="leverage">
+                        <option value="1">1x</option>
+                        <option value="2">2x</option>
+                        <option value="5">5x</option>
+                        <option value="10" selected>10x</option>
+                        <option value="20">20x</option>
+                        <option value="50">50x</option>
+                        <option value="100">100x</option>
+                        <option value="200">200x</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                    <input type="number" id="customLeverage" placeholder="Enter custom leverage (1-200)" min="1" max="200" style="display: none; margin-top: 10px;">
+                </div>
+                <div class="form-group">
+                    <div id="leverageWarning" style="display: none;">
+                        <div class="warning">
+                            ⚠️ High leverage trading carries extreme risk of liquidation!
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="results" class="results" style="display: none;">
+                <div class="result-row">
+                    <span class="result-label">Current Leverage</span>
+                    <span id="currentLeverage" class="result-value"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Position Size</span>
+                    <span id="positionSize" class="result-value"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Notional Value</span>
+                    <span id="notionalValue" class="result-value"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Margin Required</span>
+                    <span id="marginRequired" class="result-value"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Trading Fee</span>
+                    <span id="tradingFee" class="result-value"></span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Liquidation Price (Est.)</span>
+                    <span id="liquidationPrice" class="result-value"></span>
+                </div>
+            </div>
+            
+            <div class="scenarios-container">
+                <h2>Profit & Loss Scenarios</h2>
+                <table class="scenarios-table">
+                    <thead>
+                        <tr>
+                            <th>Scenario Type</th>
+                            <th>Price Change</th>
+                            <th>Exit Price (USD)</th>
+                            <th>P&L (USD)</th>
+                            <th>P&L (INR)</th>
+                            <th>ROI %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scenariosTableBody">
+                        <!-- Scenarios will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentExchangeRate = 83.25;
+        let isShortPosition = false;
+        let isMakerOrder = false;
+        let currentLeverageValue = 10;
+        let entryPrice = 0;
+        let capitalUSD = 0;
+        
+        // Contract symbols mapping
+        const contractSymbols = {
+            'bitcoin': 'BTC',
+            'ethereum': 'ETH',
+            'binancecoin': 'BNB',
+            'solana': 'SOL',
+            'ripple': 'XRP',
+            'cardano': 'ADA',
+            'polkadot': 'DOT',
+            'chainlink': 'LINK',
+            'avalanche-2': 'AVAX',
+            'dogecoin': 'DOGE'
+        };
+        
+        // DOM elements
+        const elements = {
+            contract: document.getElementById('contract'),
+            entryPrice: document.getElementById('entryPrice'),
+            priceStatus: document.getElementById('priceStatus'),
+            capitalUSD: document.getElementById('capitalUSD'),
+            capitalINR: document.getElementById('capitalINR'),
+            directionToggle: document.getElementById('directionToggle'),
+            orderTypeToggle: document.getElementById('orderTypeToggle'),
+            leverage: document.getElementById('leverage'),
+            customLeverage: document.getElementById('customLeverage'),
+            leverageWarning: document.getElementById('leverageWarning'),
+            results: document.getElementById('results'),
+            currentLeverage: document.getElementById('currentLeverage'),
+            positionSize: document.getElementById('positionSize'),
+            notionalValue: document.getElementById('notionalValue'),
+            marginRequired: document.getElementById('marginRequired'),
+            tradingFee: document.getElementById('tradingFee'),
+            liquidationPrice: document.getElementById('liquidationPrice'),
+            scenariosTableBody: document.getElementById('scenariosTableBody'),
+            exchangeRateDisplay: document.getElementById('exchangeRateDisplay')
+        };
+        
+        // Fetch live exchange rate
+        async function fetchExchangeRate() {
+            try {
+                const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+                const data = await response.json();
+                currentExchangeRate = data.usd.inr;
+            } catch (error) {
+                console.log('Using fallback exchange rate');
+            }
+            elements.exchangeRateDisplay.textContent = `1 USD = ₹${currentExchangeRate.toFixed(2)}`;
+        }
+        
+        // Fetch live crypto prices
+        async function fetchCryptoPrices() {
+            try {
+                const contractId = elements.contract.value;
+                const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${contractId}&vs_currencies=usd`);
+                const data = await response.json();
+                entryPrice = data[contractId].usd;
+                elements.entryPrice.value = entryPrice.toFixed(2);
+                elements.priceStatus.style.background = '#4ecdc4';
+            } catch (error) {
+                elements.priceStatus.style.background = '#ff6b6b';
+                console.log('Price fetch error:', error);
+            }
+            calculateAndDisplay();
+        }
+        
+        // Sync USD and INR inputs
+        function syncCapitalUSD() {
+            capitalUSD = parseFloat(elements.capitalUSD.value) || 0;
+            elements.capitalINR.value = (capitalUSD * currentExchangeRate).toFixed(2);
+            calculateAndDisplay();
+        }
+        
+        function syncCapitalINR() {
+            const capitalINR = parseFloat(elements.capitalINR.value) || 0;
+            capitalUSD = capitalINR / currentExchangeRate;
+            elements.capitalUSD.value = capitalUSD.toFixed(2);
+            calculateAndDisplay();
+        }
+        
+        // Toggle position direction
+        function toggleDirection() {
+            isShortPosition = !isShortPosition;
+            elements.directionToggle.classList.toggle('active', isShortPosition);
+            calculateAndDisplay();
+        }
+        
+        // Toggle order type
+        function toggleOrderType() {
+            isMakerOrder = !isMakerOrder;
+            elements.orderTypeToggle.classList.toggle('active', isMakerOrder);
+            calculateAndDisplay();
+        }
+        
+        // Handle leverage changes
+        function handleLeverageChange() {
+            const leverageValue = elements.leverage.value;
+            if (leverageValue === 'custom') {
+                elements.customLeverage.style.display = 'block';
+                currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
+            } else {
+                elements.customLeverage.style.display = 'none';
+                currentLeverageValue = parseFloat(leverageValue);
+            }
+            
+            // Show warning for high leverage
+            if (currentLeverageValue >= 50) {
+                elements.leverageWarning.style.display = 'block';
+            } else {
+                elements.leverageWarning.style.display = 'none';
+            }
+            
+            calculateAndDisplay();
+        }
+        
+        // Main calculation function
+        function calculateAndDisplay() {
+            // Update exchange rate display
+            fetchExchangeRate();
+            
+            if (!capitalUSD || !entryPrice || !currentLeverageValue) {
+                elements.results.style.display = 'none';
+                return;
+            }
+            
+            // Calculate position details
+            const positionValue = capitalUSD * currentLeverageValue;
+            const positionSizeTokens = positionValue / entryPrice;
+            const feeRate = isMakerOrder ? 0.0002 : 0.0005; // 0.02% for maker, 0.05% for taker
+            const tradingFeeUSD = positionValue * feeRate;
+            const marginRequiredUSD = capitalUSD;
+            
+            // Calculate liquidation price (approximate)
+            const liquidationBuffer = (1 / currentLeverageValue) * 0.9; // 90% of max loss before liquidation
+            const liquidationPrice = isShortPosition 
+                ? entryPrice * (1 + liquidationBuffer)
+                : entryPrice * (1 - liquidationBuffer);
+            
+            // Update results display
+            elements.currentLeverage.textContent = `${currentLeverageValue}x`;
+            elements.positionSize.textContent = `${positionSizeTokens.toFixed(6)} ${contractSymbols[elements.contract.value]}`;
+            elements.notionalValue.innerHTML = `$${positionValue.toLocaleString()}<span class="currency-display">₹${(positionValue * currentExchangeRate).toLocaleString()}</span>`;
+            elements.marginRequired.innerHTML = `$${marginRequiredUSD.toFixed(2)}<span class="currency-display">₹${(marginRequiredUSD * currentExchangeRate).toFixed(2)}</span>`;
+            elements.tradingFee.innerHTML = `$${tradingFeeUSD.toFixed(2)}<span class="currency-display">₹${(tradingFeeUSD * currentExchangeRate).toFixed(2)}</span>`;
+            elements.liquidationPrice.textContent = `$${liquidationPrice.toFixed(2)} (${isShortPosition ? '+' : '-'}${(liquidationBuffer * 100).toFixed(2)}%)`;
+            
+            elements.results.style.display = 'block';
+            
+            // Generate scenarios
+            generateScenarios(positionSizeTokens, tradingFeeUSD);
+        }
+        
+        // Generate profit/loss scenarios
+        function generateScenarios(positionSize, tradingFee) {
+            let scenariosHTML = '';
+            
+            // Generate scenarios for 1% to 10%
+            for (let percentage = 1; percentage <= 10; percentage++) {
+                // Positive scenario (profit for long, loss for short)
+                const positiveChange = percentage / 100;
+                const positiveExitPrice = entryPrice * (1 + positiveChange);
+                const positivePnL = isShortPosition 
+                    ? (entryPrice - positiveExitPrice) * positionSize - tradingFee
+                    : (positiveExitPrice - entryPrice) * positionSize - tradingFee;
+                const positiveROI = (positivePnL / capitalUSD) * 100;
+                
+                // Negative scenario (loss for long, profit for short)
+                const negativeChange = -percentage / 100;
+                const negativeExitPrice = entryPrice * (1 + negativeChange);
+                const negativePnL = isShortPosition 
+                    ? (entryPrice - negativeExitPrice) * positionSize - tradingFee
+                    : (negativeExitPrice - entryPrice) * positionSize - tradingFee;
+                const negativeROI = (negativePnL / capitalUSD) * 100;
+                
+                // Determine scenario labels
+                const positiveLabel = isShortPosition 
+                    ? (positivePnL >= 0 ? 'Stop Loss (Short)' : 'Stop Loss (Short)')
+                    : (positivePnL >= 0 ? 'Take Profit' : 'Take Profit');
+                const negativeLabel = isShortPosition 
+                    ? (negativePnL >= 0 ? 'Take Profit (Short)' : 'Take Profit (Short)')
+                    : (negativePnL >= 0 ? 'Stop Loss' : 'Stop Loss');
+                
+                // Add positive scenario
+                scenariosHTML += `
+                    <tr>
+                        <td>${positiveLabel}</td>
+                        <td>+${percentage}%</td>
+                        <td>$${positiveExitPrice.toFixed(2)}</td>
+                        <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">$${positivePnL.toFixed(2)}</td>
+                        <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">₹${(positivePnL * currentExchangeRate).toFixed(2)}</td>
+                        <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">${positiveROI.toFixed(2)}%</td>
+                    </tr>
+                `;
+                
+                // Add negative scenario
+                scenariosHTML += `
+                    <tr>
+                        <td>${negativeLabel}</td>
+                        <td>-${percentage}%</td>
+                        <td>$${negativeExitPrice.toFixed(2)}</td>
+                        <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">$${negativePnL.toFixed(2)}</td>
+                        <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">₹${(negativePnL * currentExchangeRate).toFixed(2)}</td>
+                        <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">${negativeROI.toFixed(2)}%</td>
+                    </tr>
+                `;
+            }
+            
+            elements.scenariosTableBody.innerHTML = scenariosHTML;
+        }
+        
+        // Event listeners
+        elements.contract.addEventListener('change', fetchCryptoPrices);
+        elements.capitalUSD.addEventListener('input', syncCapitalUSD);
+        elements.capitalINR.addEventListener('input', syncCapitalINR);
+        elements.directionToggle.addEventListener('click', toggleDirection);
+        elements.orderTypeToggle.addEventListener('click', toggleOrderType);
+        elements.leverage.addEventListener('change', handleLeverageChange);
+        elements.customLeverage.addEventListener('input', handleLeverageChange);
+        
+        // Initialize the calculator
+        fetchExchangeRate();
+        fetchCryptoPrices();
+        
+        // Auto-refresh prices every 30 seconds
+        setInterval(fetchCryptoPrices, 30000);
+        
+        // Auto-refresh exchange rate every 60 seconds
+        setInterval(fetchExchangeRate, 60000);
+    </script>
+</body>
+</html>
