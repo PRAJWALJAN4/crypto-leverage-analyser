@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Futures Trading Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .brand-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4ecdc4;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 2px solid #4ecdc4;
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: 2px solid #4ecdc4;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Fix for dropdown styling */
+        .form-group select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 12px center;
+            background-repeat: no-repeat;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+
+        .form-group select option {
+            background-color: #2d2d3d;
+            color: #fff;
+            padding: 10px;
+        }
+
+        .maker-taker-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #4ecdc4;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            left: 32px;
+        }
+
+        .exchange-rate-display {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .exchange-rate-display .rate-label {
+            color: #4ecdc4;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .exchange-rate-display .rate-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .result-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .scenarios-container {
+            margin-top: 30px;
+        }
+
+        .scenarios-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .scenarios-table th {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 10px;
+            text-align: left;
+            color: #4ecdc4;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+        }
+
+        .scenarios-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.9rem;
+        }
+
+        .scenarios-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .profit {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .loss {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .currency-display {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #4ecdc4;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .price-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.9rem;
+        }
+
+        .price-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4ecdc4;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .scenarios-table {
+                font-size: 0.8rem;
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+            
+            .scenarios-table thead,
+            .scenarios-table tbody,
+            .scenarios-table th,
+            .scenarios-table td,
+            .scenarios-table tr {
+                display: block;
+            }
+            
+            .scenarios-table thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            
+            .scenarios-table tr {
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                margin-bottom: 10px;
+                padding: 10px;
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.05);
+            }
+            
+            .scenarios-table td {
+                border: none;
+                position: relative;
+                padding-left: 50%;
+                text-align: right;
+            }
+            
+            .scenarios-table td:before {
+                content: attr(data-label) ": ";
+                position: absolute;
+                left: 6px;
+                width: 45%;
+                text-align: left;
+                font-weight: bold;
+                color: #4ecdc4;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="brand-title">PRAJWAL JANA'S</div>
+            <h1>Crypto Futures Trading Calculator</h1>
+            <p>Calculate your position size, profit/loss scenarios, and trading fees with live prices</p>
+        </div>
+
+        <div class="calculator">
+            <div class="exchange-rate-display">
+                <div class="rate-label">Live Exchange Rate</div>
+                <div class="rate-value" id="exchangeRateDisplay">1 USD = Loading... INR</div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contract">Select Contract</label>
+                    <select id="contract">
+                        <option value="bitcoin">BTCUSD - Bitcoin</option>
+                        <option value="ethereum">ETHUSD - Ethereum</option>
+                        <option value="binancecoin">BNBUSD - Binance Coin</option>
+                        <option value="solana">SOLUSD - Solana</option>
+                        <option value="ripple">XRPUSD - Ripple</option>
+                        <option value="cardano">ADAUSD - Cardano</option>
+                        <option value="polkadot">DOTUSD - Polkadot</option>
+                        <option value="chainlink">LINKUSD - Chainlink</option>
+                        <option value="avalanche-2">AVAXUSD - Avalanche</option>
+                        <option value="dogecoin">DOGEUSD - Dogecoin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="entryPrice">Entry Price (USD) <span class="price-status" id="priceStatus"><span class="price-indicator"></span>Live</span></label>
+                    <input type="number" id="entryPrice" placeholder="Loading live price..." readonly>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="capitalUSD">Capital (USD)</label>
+                    <input type="number" id="capitalUSD" placeholder="Enter capital in USD">
+                </div>
+                <div class="form-group">
+                    <label for="capitalINR">Capital (INR)</label>
+                    <input type="number" id="capitalINR" placeholder="Enter capital in INR">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="leverage">Leverage</label>
+                    <select id="leverage">
+                        <option value="1">1x</option>
+                        <option value="2">2x</option>
+                        <option value="5">5x</option>
+                        <option value="10" selected>10x</option>
+                        <option value="20">20x</option>
+                        <option value="25">25x</option>
+                        <option value="50">50x</option>
+                        <option value="100">100x</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Order Type</label>
+                    <div class="maker-taker-toggle">
+                        <span>Taker (Default - 0.05%)</span>
+                        <div class="toggle-switch" id="orderTypeToggle"></div>
+                        <span>Maker (0.02%)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results" id="results" style="display: none;">
+                <div class="result-row">
+                    <span class="result-label">Position Size (Contracts)</span>
+                    <span class="result-value" id="positionSize">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Crypto Amount</span>
+                    <span class="result-value" id="cryptoAmount">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Lots (0.001 = 1 Lot)</span>
+                    <span class="result-value" id="lotsAmount">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Notional Value</span>
+                    <span class="result-value" id="notionalValue">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Margin Required</span>
+                    <span class="result-value" id="marginRequired">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Trading Fee</span>
+                    <span class="result-value" id="tradingFee">-</span>
+                </div>
+            </div>
+
+            <div class="scenarios-container">
+                <h2 style="color: #4ecdc4; margin-bottom: 20px;">Profit/Loss Scenarios (1% to 10%)</h2>
+                <table class="scenarios-table" id="scenariosTable">
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Change</th>
+                            <th>Exit Price</th>
+                            <th>P&L (USD)</th>
+                            <th>P&L (INR)</th>
+                            <th>ROI (%)</th>
+                            <th>Crypto Amt</th>
+                            <th>Lots</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scenariosBody">
+                        <!-- Scenarios will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let USD_TO_INR = 83.25; // Default fallback rate
+        let isMaker = false;
+        let currentPrice = 0;
+        let currentSymbol = '';
+
+        // Contract symbol mapping
+        const contractSymbols = {
+            'bitcoin': 'BTC',
+            'ethereum': 'ETH',
+            'binancecoin': 'BNB',
+            'solana': 'SOL',
+            'ripple': 'XRP',
+            'cardano': 'ADA',
+            'polkadot': 'DOT',
+            'chainlink': 'LINK',
+            'avalanche-2': 'AVAX',
+            'dogecoin': 'DOGE'
+        };
+
+        // DOM elements
+        const contractSelect = document.getElementById('contract');
+        const entryPriceInput = document.getElementById('entryPrice');
+        const capitalUSDInput = document.getElementById('capitalUSD');
+        const capitalINRInput = document.getElementById('capitalINR');
+        const leverageSelect = document.getElementById('leverage');
+        const orderTypeToggle = document.getElementById('orderTypeToggle');
+        const resultsDiv = document.getElementById('results');
+        const scenariosBody = document.getElementById('scenariosBody');
+        const priceStatus = document.getElementById('priceStatus');
+        const exchangeRateDisplay = document.getElementById('exchangeRateDisplay');
+
+        // Initialize
+        function init() {
+            currentSymbol = contractSymbols[contractSelect.value];
+            fetchExchangeRate();
+            fetchLivePrice();
+            setupEventListeners();
+            // Fetch rates every 60 seconds
+            setInterval(() => {
+                fetchExchangeRate();
+                fetchLivePrice();
+            }, 60000);
+        }
+
+        function setupEventListeners() {
+            contractSelect.addEventListener('change', () => {
+                currentSymbol = contractSymbols[contractSelect.value];
+                fetchLivePrice();
+            });
+            capitalUSDInput.addEventListener('input', syncCapitalUSD);
+            capitalINRInput.addEventListener('input', syncCapitalINR);
+            leverageSelect.addEventListener('change', calculate);
+            orderTypeToggle.addEventListener('click', toggleOrderType);
+            
+            // Recalculate when any input changes
+            [capitalUSDInput, capitalINRInput].forEach(input => {
+                input.addEventListener('input', calculate);
+            });
+        }
+
+        async function fetchExchangeRate() {
+            try {
+                // Using free exchange rate API
+                const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+                
+                if (!response.ok) {
+                    throw new Error('Exchange rate API request failed');
+                }
+                
+                const data = await response.json();
+                USD_TO_INR = data.usd.inr;
+                
+                exchangeRateDisplay.textContent = `1 USD = ${USD_TO_INR.toFixed(2)} INR`;
+                
+                // Recalculate if inputs are filled
+                if (capitalUSDInput.value || capitalINRInput.value) {
+                    calculate();
+                }
+            } catch (error) {
+                console.error('Error fetching exchange rate:', error);
+                exchangeRateDisplay.textContent = `1 USD = ${USD_TO_INR.toFixed(2)} INR (Cached)`;
+            }
+        }
+
+        async function fetchLivePrice() {
+            try {
+                priceStatus.innerHTML = '<span class="price-indicator"></span>Fetching...';
+                const selectedCoin = contractSelect.value;
+                
+                // Using CoinGecko API for live prices (free tier)
+                const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${selectedCoin}&vs_currencies=usd`);
+                
+                if (!response.ok) {
+                    throw new Error('Crypto API request failed');
+                }
+                
+                const data = await response.json();
+                currentPrice = data[selectedCoin].usd;
+                entryPriceInput.value = currentPrice;
+                
+                priceStatus.innerHTML = '<span class="price-indicator"></span>Live';
+                calculate();
+            } catch (error) {
+                console.error('Error fetching crypto price:', error);
+                priceStatus.innerHTML = '<span style="color: #ff6b6b;">⚠ API Error</span>';
+                // Fallback to mock prices if API fails
+                const fallbackPrices = {
+                    'bitcoin': 65000,
+                    'ethereum': 2500,
+                    'binancecoin': 320,
+                    'solana': 140,
+                    'ripple': 0.52,
+                    'cardano': 1.25,
+                    'polkadot': 18.50,
+                    'chainlink': 25.80,
+                    'avalanche-2': 42.30,
+                    'dogecoin': 0.08
+                };
+                currentPrice = fallbackPrices[contractSelect.value];
+                entryPriceInput.value = currentPrice;
+                calculate();
+            }
+        }
+
+        function syncCapitalUSD() {
+            const usdValue = parseFloat(capitalUSDInput.value) || 0;
+            capitalINRInput.value = (usdValue * USD_TO_INR).toFixed(2);
+            calculate();
+        }
+
+        function syncCapitalINR() {
+            const inrValue = parseFloat(capitalINRInput.value) || 0;
+            capitalUSDInput.value = (inrValue / USD_TO_INR).toFixed(2);
+            calculate();
+        }
+
+        function toggleOrderType() {
+            isMaker = !isMaker;
+            orderTypeToggle.classList.toggle('active', isMaker);
+            calculate();
+        }
+
+        function calculate() {
+            const capital = parseFloat(capitalUSDInput.value) || 0;
+            const entryPrice = parseFloat(entryPriceInput.value) || 0;
+            const leverage = parseInt(leverageSelect.value) || 1;
+            
+            if (capital <= 0 || entryPrice <= 0) {
+                resultsDiv.style.display = 'none';
+                scenariosBody.innerHTML = '';
+                return;
+            }
+
+            // Calculate position size
+            const totalPositionValue = capital * leverage;
+            const positionSize = totalPositionValue / entryPrice;
+            const cryptoAmount = positionSize;
+            const lotsAmount = positionSize / 0.001; // 0.001 = 1 lot
+            
+            // Calculate margin and fees
+            const marginRequired = capital;
+            const feeRate = isMaker ? 0.0002 : 0.0005; // 0.02% maker, 0.05% taker
+            const tradingFee = totalPositionValue * feeRate;
+            
+            // Update results
+            updateResults(positionSize, cryptoAmount, lotsAmount, totalPositionValue, marginRequired, tradingFee);
+            
+            // Generate scenarios table
+            generateScenariosTable(entryPrice, positionSize, tradingFee, capital);
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        function updateResults(positionSize, cryptoAmount, lotsAmount, notionalValue, marginRequired, tradingFee) {
+            document.getElementById('positionSize').textContent = positionSize.toFixed(6);
+            document.getElementById('cryptoAmount').textContent = `${cryptoAmount.toFixed(6)} ${currentSymbol}`;
+            document.getElementById('lotsAmount').textContent = `${lotsAmount.toFixed(2)} lots`;
+            document.getElementById('notionalValue').innerHTML = `
+                $${notionalValue.toLocaleString()} USD<br>
+                <span class="currency-display">₹${(notionalValue * USD_TO_INR).toLocaleString()} INR</span>
+            `;
+            document.getElementById('marginRequired').innerHTML = `
+                $${marginRequired.toLocaleString()} USD<br>
+                <span class="currency-display">₹${(marginRequired * USD_TO_INR).toLocaleString()} INR</span>
+            `;
+            document.getElementById('tradingFee').innerHTML = `
+                $${tradingFee.toFixed(2)} USD<br>
+                <span class="currency-display">₹${(tradingFee * USD_TO_INR).toFixed(2)} INR</span>
+            `;
+        }
+
+        function generateScenariosTable(entryPrice, positionSize, tradingFee, capital) {
+            // Generate scenarios for 1% to 10% for both profit and loss
+            const percentages = [];
+            
+            // Add Take Profit scenarios (1% to 10%)
+            for (let i = 1; i <= 10; i++) {
+                percentages.push(i);
+            }
+            
+            // Add Stop Loss scenarios (-1% to -10%)
+            for (let i = 1; i <= 10; i++) {
+                percentages.push(-i);
+            }
+            
+            let tableHTML = '';
+            
+            percentages.forEach(percent => {
+                const exitPrice = entryPrice * (1 + percent / 100);
+                const pnl = (exitPrice - entryPrice) * positionSize - tradingFee;
+                const roi = (pnl / capital) * 100;
+                const cryptoAtExit = positionSize;
+                const lotsAtExit = positionSize / 0.001;
+                
+                const isProfit = pnl >= 0;
+                const pnlClass = isProfit ? 'profit' : 'loss';
+                const scenarioType = percent > 0 ? 'Take Profit' : 'Stop Loss';
+                const sign = percent > 0 ? '+' : '';
+                
+                tableHTML += `
+                    <tr>
+                        <td data-label="Scenario"><strong>${scenarioType}</strong></td>
+                        <td data-label="Change"><strong>${sign}${percent}%</strong></td>
+                        <td data-label="Exit Price">$${exitPrice.toFixed(2)}</td>
+                        <td data-label="P&L (USD)" class="${pnlClass}">$${pnl.toFixed(2)}</td>
+                        <td data-label="P&L (INR)" class="${pnlClass}">₹${(pnl * USD_TO_INR).toFixed(2)}</td>
+                        <td data-label="ROI (%)" class="${pnlClass}">${roi.toFixed(2)}%</td>
+                        <td data-label="Crypto Amt">${cryptoAtExit.toFixed(6)} ${currentSymbol}</td>
+                        <td data-label="Lots">${lotsAtExit.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            scenariosBody.innerHTML = tableHTML;
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
