@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Futures Trading Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .fee-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        .fee-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .fee-card h3 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: 2px solid #4ecdc4;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .maker-taker-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: #333;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active {
+            background: #4ecdc4;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: #fff;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-switch.active::after {
+            left: 32px;
+        }
+
+        .scenarios-container {
+            margin-top: 30px;
+        }
+
+        .scenarios-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .scenario-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scenario-card h3 {
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .scenario-detail {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .scenario-detail:last-child {
+            border-bottom: none;
+        }
+
+        .profit {
+            color: #4ecdc4;
+        }
+
+        .loss {
+            color: #ff6b6b;
+        }
+
+        .currency-display {
+            font-size: 0.9em;
+            opacity: 0.8;
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            font-weight: 600;
+            color: #4ecdc4;
+        }
+
+        .result-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .fee-info {
+                grid-template-columns: 1fr;
+            }
+            
+            .scenarios-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #4ecdc4;
+        }
+
+        .error {
+            color: #ff6b6b;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Crypto Futures Trading Calculator</h1>
+            <p>Calculate your position size, profit/loss scenarios, and trading fees</p>
+        </div>
+
+        <div class="fee-info">
+            <div class="fee-card">
+                <h3>Taker Fee (Default)</h3>
+                <p>0.05% - Takes liquidity from order book</p>
+            </div>
+            <div class="fee-card">
+                <h3>Maker Fee</h3>
+                <p>0.02% - Adds liquidity to order book</p>
+            </div>
+        </div>
+
+        <div class="calculator">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="contract">Select Contract</label>
+                    <select id="contract">
+                        <option value="BTCUSD">BTCUSD - Bitcoin</option>
+                        <option value="ETHUSD">ETHUSD - Ethereum</option>
+                        <option value="BNBUSD">BNBUSD - Binance Coin</option>
+                        <option value="SOLUSD">SOLUSD - Solana</option>
+                        <option value="XRPUSD">XRPUSD - Ripple</option>
+                        <option value="ADAUSD">ADAUSD - Cardano</option>
+                        <option value="DOTUSD">DOTUSD - Polkadot</option>
+                        <option value="LINKUSD">LINKUSD - Chainlink</option>
+                        <option value="AVAXUSD">AVAXUSD - Avalanche</option>
+                        <option value="DOGEUSD">DOGEUSD - Dogecoin</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="entryPrice">Entry Price (USD)</label>
+                    <input type="number" id="entryPrice" placeholder="Auto-detected price" readonly>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="capitalUSD">Capital (USD)</label>
+                    <input type="number" id="capitalUSD" placeholder="Enter capital in USD">
+                </div>
+                <div class="form-group">
+                    <label for="capitalINR">Capital (INR)</label>
+                    <input type="number" id="capitalINR" placeholder="Enter capital in INR">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="leverage">Leverage</label>
+                    <select id="leverage">
+                        <option value="1">1x</option>
+                        <option value="2">2x</option>
+                        <option value="5">5x</option>
+                        <option value="10" selected>10x</option>
+                        <option value="20">20x</option>
+                        <option value="25">25x</option>
+                        <option value="50">50x</option>
+                        <option value="100">100x</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Order Type</label>
+                    <div class="maker-taker-toggle">
+                        <span>Taker</span>
+                        <div class="toggle-switch" id="orderTypeToggle"></div>
+                        <span>Maker</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results" id="results" style="display: none;">
+                <div class="result-row">
+                    <span class="result-label">Position Size (Contracts)</span>
+                    <span class="result-value" id="positionSize">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Notional Value</span>
+                    <span class="result-value" id="notionalValue">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Margin Required</span>
+                    <span class="result-value" id="marginRequired">-</span>
+                </div>
+                <div class="result-row">
+                    <span class="result-label">Trading Fee</span>
+                    <span class="result-value" id="tradingFee">-</span>
+                </div>
+            </div>
+
+            <div class="scenarios-container">
+                <h2 style="color: #4ecdc4; margin-bottom: 20px;">Profit/Loss Scenarios</h2>
+                <div class="scenarios-grid" id="scenariosGrid">
+                    <!-- Scenarios will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock crypto prices (in a real application, you'd fetch from an API)
+        const cryptoPrices = {
+            'BTCUSD': 65000,
+            'ETHUSD': 2500,
+            'BNBUSD': 320,
+            'SOLUSD': 140,
+            'XRPUSD': 0.52,
+            'ADAUSD': 1.25,
+            'DOTUSD': 18.50,
+            'LINKUSD': 25.80,
+            'AVAXUSD': 42.30,
+            'DOGEUSD': 0.08
+        };
+
+        // Current USD to INR exchange rate
+        const USD_TO_INR = 88.28;
+
+        let isMaker = false;
+
+        // DOM elements
+        const contractSelect = document.getElementById('contract');
+        const entryPriceInput = document.getElementById('entryPrice');
+        const capitalUSDInput = document.getElementById('capitalUSD');
+        const capitalINRInput = document.getElementById('capitalINR');
+        const leverageSelect = document.getElementById('leverage');
+        const orderTypeToggle = document.getElementById('orderTypeToggle');
+        const resultsDiv = document.getElementById('results');
+        const scenariosGrid = document.getElementById('scenariosGrid');
+
+        // Initialize
+        function init() {
+            updateEntryPrice();
+            setupEventListeners();
+            calculate();
+        }
+
+        function setupEventListeners() {
+            contractSelect.addEventListener('change', updateEntryPrice);
+            capitalUSDInput.addEventListener('input', syncCapitalUSD);
+            capitalINRInput.addEventListener('input', syncCapitalINR);
+            leverageSelect.addEventListener('change', calculate);
+            orderTypeToggle.addEventListener('click', toggleOrderType);
+            
+            // Recalculate when any input changes
+            [capitalUSDInput, capitalINRInput].forEach(input => {
+                input.addEventListener('input', calculate);
+            });
+        }
+
+        function updateEntryPrice() {
+            const selectedContract = contractSelect.value;
+            const price = cryptoPrices[selectedContract];
+            entryPriceInput.value = price;
+            calculate();
+        }
+
+        function syncCapitalUSD() {
+            const usdValue = parseFloat(capitalUSDInput.value) || 0;
+            capitalINRInput.value = (usdValue * USD_TO_INR).toFixed(2);
+            calculate();
+        }
+
+        function syncCapitalINR() {
+            const inrValue = parseFloat(capitalINRInput.value) || 0;
+            capitalUSDInput.value = (inrValue / USD_TO_INR).toFixed(2);
+            calculate();
+        }
+
+        function toggleOrderType() {
+            isMaker = !isMaker;
+            orderTypeToggle.classList.toggle('active', isMaker);
+            calculate();
+        }
+
+        function calculate() {
+            const capital = parseFloat(capitalUSDInput.value) || 0;
+            const entryPrice = parseFloat(entryPriceInput.value) || 0;
+            const leverage = parseInt(leverageSelect.value) || 1;
+            
+            if (capital <= 0 || entryPrice <= 0) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            // Calculate position size
+            const totalPositionValue = capital * leverage;
+            const positionSize = totalPositionValue / entryPrice;
+            
+            // Calculate margin and fees
+            const marginRequired = capital;
+            const feeRate = isMaker ? 0.0002 : 0.0005; // 0.02% maker, 0.05% taker
+            const tradingFee = totalPositionValue * feeRate;
+            
+            // Update results
+            updateResults(positionSize, totalPositionValue, marginRequired, tradingFee);
+            
+            // Generate scenarios
+            generateScenarios(entryPrice, positionSize, tradingFee);
+            
+            resultsDiv.style.display = 'block';
+        }
+
+        function updateResults(positionSize, notionalValue, marginRequired, tradingFee) {
+            document.getElementById('positionSize').textContent = positionSize.toFixed(6);
+            document.getElementById('notionalValue').innerHTML = `
+                $${notionalValue.toLocaleString()} USD<br>
+                <span class="currency-display">₹${(notionalValue * USD_TO_INR).toLocaleString()} INR</span>
+            `;
+            document.getElementById('marginRequired').innerHTML = `
+                $${marginRequired.toLocaleString()} USD<br>
+                <span class="currency-display">₹${(marginRequired * USD_TO_INR).toLocaleString()} INR</span>
+            `;
+            document.getElementById('tradingFee').innerHTML = `
+                $${tradingFee.toFixed(2)} USD<br>
+                <span class="currency-display">₹${(tradingFee * USD_TO_INR).toFixed(2)} INR</span>
+            `;
+        }
+
+        function generateScenarios(entryPrice, positionSize, tradingFee) {
+            const percentages = [1, 2, 5, 10];
+            const scenarios = [];
+            
+            percentages.forEach(percent => {
+                // Take Profit scenario
+                const tpPrice = entryPrice * (1 + percent / 100);
+                const tpPnl = (tpPrice - entryPrice) * positionSize - tradingFee;
+                
+                scenarios.push({
+                    title: `Take Profit +${percent}%`,
+                    price: tpPrice,
+                    pnl: tpPnl,
+                    type: 'profit'
+                });
+                
+                // Stop Loss scenario
+                const slPrice = entryPrice * (1 - percent / 100);
+                const slPnl = (slPrice - entryPrice) * positionSize - tradingFee;
+                
+                scenarios.push({
+                    title: `Stop Loss -${percent}%`,
+                    price: slPrice,
+                    pnl: slPnl,
+                    type: 'loss'
+                });
+            });
+            
+            renderScenarios(scenarios);
+        }
+
+        function renderScenarios(scenarios) {
+            scenariosGrid.innerHTML = '';
+            
+            scenarios.forEach(scenario => {
+                const card = document.createElement('div');
+                card.className = 'scenario-card';
+                
+                const pnlClass = scenario.pnl >= 0 ? 'profit' : 'loss';
+                
+                card.innerHTML = `
+                    <h3>${scenario.title}</h3>
+                    <div class="scenario-detail">
+                        <span>Exit Price:</span>
+                        <span>$${scenario.price.toFixed(2)}</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>P&L (USD):</span>
+                        <span class="${pnlClass}">$${scenario.pnl.toFixed(2)}</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>P&L (INR):</span>
+                        <span class="${pnlClass}">₹${(scenario.pnl * USD_TO_INR).toFixed(2)}</span>
+                    </div>
+                    <div class="scenario-detail">
+                        <span>ROI:</span>
+                        <span class="${pnlClass}">${((scenario.pnl / parseFloat(capitalUSDInput.value || 1)) * 100).toFixed(2)}%</span>
+                    </div>
+                `;
+                
+                scenariosGrid.appendChild(card);
+            });
+        }
+
+        // Initialize the application
+        init();
+    </script>
+</body>
+</html>
