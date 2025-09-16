@@ -180,6 +180,26 @@
             opacity: 0.8;
         }
         
+        .custom-entry-exit, .points-calculator {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid rgba(78, 205, 196, 0.3);
+        }
+        
+        .custom-entry-exit h3, .points-calculator h3 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+        }
+        
+        .entry-exit-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        
         .results {
             margin-top: 30px;
             background: rgba(255, 255, 255, 0.05);
@@ -231,17 +251,17 @@
         
         .scenarios-table th {
             background: rgba(78, 205, 196, 0.2);
-            padding: 15px;
+            padding: 12px 6px;
             color: #4ecdc4;
             font-weight: 600;
             text-align: left;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
         
         .scenarios-table td {
-            padding: 12px 15px;
+            padding: 10px 6px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 0.9rem;
+            font-size: 0.8rem;
         }
         
         .scenarios-table tr:hover {
@@ -292,7 +312,7 @@
         }
         
         @media (max-width: 768px) {
-            .form-row {
+            .form-row, .entry-exit-row {
                 grid-template-columns: 1fr;
             }
             
@@ -411,6 +431,51 @@
                 </div>
             </div>
             
+            <!-- Custom Entry/Exit Feature -->
+            <div class="form-row">
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="customEntryExitToggle" />
+                        Custom Entry & Exit Points
+                    </label>
+                    <div id="customEntryExitPanel" class="custom-entry-exit" style="display: none;">
+                        <h3>Manual Entry & Exit Prices</h3>
+                        <div class="entry-exit-row">
+                            <div class="form-group">
+                                <label for="customEntryPrice">Entry Price (USD)</label>
+                                <input type="number" id="customEntryPrice" placeholder="Enter entry price" step="0.01" />
+                            </div>
+                            <div class="form-group">
+                                <label for="customExitPrice">Exit Price (USD)</label>
+                                <input type="number" id="customExitPrice" placeholder="Enter exit price" step="0.01" />
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <label style="margin-top: 15px;">
+                        <input type="checkbox" id="pointsCalculatorToggle" />
+                        P&L from Points Captured
+                    </label>
+                    <div id="pointsCalculatorPanel" class="points-calculator" style="display: none;">
+                        <h3>Calculate P&L from Points Movement</h3>
+                        <div class="entry-exit-row">
+                            <div class="form-group">
+                                <label for="pointsCaptured">Points Captured</label>
+                                <input type="number" id="pointsCaptured" placeholder="Enter points (e.g., 50, 100)" step="0.01" />
+                            </div>
+                            <div class="form-group">
+                                <label>Direction</label>
+                                <select id="pointsDirection">
+                                    <option value="profit">Profit Points</option>
+                                    <option value="loss">Loss Points</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group"></div>
+            </div>
+            
             <div id="results" class="results" style="display: none;">
                 <div class="result-row">
                     <span class="result-label">Current Leverage</span>
@@ -439,17 +504,18 @@
             </div>
             
             <div class="scenarios-container">
-                <h2>Profit & Loss Scenarios</h2>
+                <h2 id="scenariosTitle">Profit & Loss Scenarios</h2>
                 <table class="scenarios-table">
                     <thead>
-                        <tr>
-                            <th>Scenario Type</th>
-                            <th>Price Change</th>
-                            <th>Real USD Movement</th>
-                            <th>Exit Price (USD)</th>
+                        <tr id="scenariosHeader">
+                            <th>Scenario</th>
+                            <th>Change</th>
+                            <th>USD Move</th>
+                            <th>Exit Price</th>
                             <th>P&L (USD)</th>
                             <th>P&L (INR)</th>
                             <th>ROI %</th>
+                            <th>P&L/Capital %</th>
                         </tr>
                     </thead>
                     <tbody id="scenariosTableBody"></tbody>
@@ -464,6 +530,8 @@
     let currentLeverageValue = 10;
     let entryPrice = 0;
     let capitalUSD = 0;
+    let isCustomEntryExit = false;
+    let isPointsCalculator = false;
 
     const contractSymbols = {
         'bitcoin': 'BTC',
@@ -498,7 +566,17 @@
         liquidationPrice: document.getElementById('liquidationPrice'),
         scenariosTableBody: document.getElementById('scenariosTableBody'),
         exchangeRateDisplay: document.getElementById('exchangeRateDisplay'),
-        manualPriceToggle: document.getElementById('manualPriceToggle')
+        manualPriceToggle: document.getElementById('manualPriceToggle'),
+        customEntryExitToggle: document.getElementById('customEntryExitToggle'),
+        customEntryExitPanel: document.getElementById('customEntryExitPanel'),
+        customEntryPrice: document.getElementById('customEntryPrice'),
+        customExitPrice: document.getElementById('customExitPrice'),
+        pointsCalculatorToggle: document.getElementById('pointsCalculatorToggle'),
+        pointsCalculatorPanel: document.getElementById('pointsCalculatorPanel'),
+        pointsCaptured: document.getElementById('pointsCaptured'),
+        pointsDirection: document.getElementById('pointsDirection'),
+        scenariosTitle: document.getElementById('scenariosTitle'),
+        scenariosHeader: document.getElementById('scenariosHeader')
     };
 
     async function fetchExchangeRate() {
@@ -568,6 +646,60 @@
         calculateAndDisplay();
     }
 
+    function toggleCustomEntryExit() {
+        isCustomEntryExit = elements.customEntryExitToggle.checked;
+        elements.customEntryExitPanel.style.display = isCustomEntryExit ? 'block' : 'none';
+        updateTableHeaders();
+        calculateAndDisplay();
+    }
+
+    function togglePointsCalculator() {
+        isPointsCalculator = elements.pointsCalculatorToggle.checked;
+        elements.pointsCalculatorPanel.style.display = isPointsCalculator ? 'block' : 'none';
+        updateTableHeaders();
+        calculateAndDisplay();
+    }
+
+    function updateTableHeaders() {
+        if (isPointsCalculator) {
+            elements.scenariosTitle.textContent = 'Points-Based P&L Analysis';
+            elements.scenariosHeader.innerHTML = `
+                <th>Analysis</th>
+                <th>Points</th>
+                <th>Direction</th>
+                <th>P&L (USD)</th>
+                <th>P&L (INR)</th>
+                <th>ROI %</th>
+                <th>P&L/Capital %</th>
+            `;
+        } else if (isCustomEntryExit) {
+            elements.scenariosTitle.textContent = 'Custom Entry & Exit Analysis';
+            elements.scenariosHeader.innerHTML = `
+                <th>Analysis</th>
+                <th>Entry Price</th>
+                <th>Exit Price</th>
+                <th>Change %</th>
+                <th>USD Move</th>
+                <th>P&L (USD)</th>
+                <th>P&L (INR)</th>
+                <th>ROI %</th>
+                <th>P&L/Capital %</th>
+            `;
+        } else {
+            elements.scenariosTitle.textContent = 'Profit & Loss Scenarios';
+            elements.scenariosHeader.innerHTML = `
+                <th>Scenario</th>
+                <th>Change</th>
+                <th>USD Move</th>
+                <th>Exit Price</th>
+                <th>P&L (USD)</th>
+                <th>P&L (INR)</th>
+                <th>ROI %</th>
+                <th>P&L/Capital %</th>
+            `;
+        }
+    }
+
     elements.customLeverage.addEventListener('input', () => {
         if (elements.leverage.value === 'custom') {
             currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
@@ -590,12 +722,20 @@
         calculateAndDisplay();
     });
 
+    elements.customEntryExitToggle.addEventListener('change', toggleCustomEntryExit);
+    elements.pointsCalculatorToggle.addEventListener('change', togglePointsCalculator);
+
     elements.entryPrice.addEventListener('input', () => {
         if (elements.manualPriceToggle.checked) {
             entryPrice = parseFloat(elements.entryPrice.value) || 0;
             calculateAndDisplay();
         }
     });
+
+    elements.customEntryPrice.addEventListener('input', calculateAndDisplay);
+    elements.customExitPrice.addEventListener('input', calculateAndDisplay);
+    elements.pointsCaptured.addEventListener('input', calculateAndDisplay);
+    elements.pointsDirection.addEventListener('change', calculateAndDisplay);
 
     function calculateAndDisplay() {
         fetchExchangeRate();
@@ -626,7 +766,89 @@
 
         elements.results.style.display = 'block';
 
-        generateScenarios(positionSizeTokens, tradingFeeUSD);
+        if (isPointsCalculator) {
+            generatePointsScenarios(positionSizeTokens, tradingFeeUSD);
+        } else if (isCustomEntryExit) {
+            generateCustomScenarios(positionSizeTokens, tradingFeeUSD);
+        } else {
+            generateScenarios(positionSizeTokens, tradingFeeUSD);
+        }
+    }
+
+    function generatePointsScenarios(positionSize, tradingFee) {
+        const points = parseFloat(elements.pointsCaptured.value) || 0;
+        const direction = elements.pointsDirection.value;
+        
+        if (!points) {
+            elements.scenariosTableBody.innerHTML = '<tr><td colspan="7" style="text-align: center; opacity: 0.7;">Enter points to calculate P&L</td></tr>';
+            return;
+        }
+
+        let pnl;
+        if (direction === 'profit') {
+            pnl = points * positionSize - tradingFee;
+        } else {
+            pnl = -points * positionSize - tradingFee;
+        }
+
+        const roi = (pnl / capitalUSD) * 100;
+        const pnlToCapitalPercent = (pnl / capitalUSD) * 100;
+        const pnlClass = pnl >= 0 ? 'profit' : 'loss';
+        const directionText = direction === 'profit' ? 'Profit' : 'Loss';
+        const positionType = isShortPosition ? 'Short Position' : 'Long Position';
+        
+        const scenariosHTML = `
+            <tr>
+                <td><strong>${positionType}</strong></td>
+                <td>${points.toFixed(2)}</td>
+                <td>${directionText}</td>
+                <td class="${pnlClass}">$${pnl.toFixed(2)}</td>
+                <td class="${pnlClass}">₹${(pnl * currentExchangeRate).toFixed(2)}</td>
+                <td class="${pnlClass}">${roi.toFixed(2)}%</td>
+                <td class="${pnlClass}">${pnlToCapitalPercent.toFixed(2)}%</td>
+            </tr>
+        `;
+        
+        elements.scenariosTableBody.innerHTML = scenariosHTML;
+    }
+
+    function generateCustomScenarios(positionSize, tradingFee) {
+        const customEntry = parseFloat(elements.customEntryPrice.value) || 0;
+        const customExit = parseFloat(elements.customExitPrice.value) || 0;
+        
+        if (!customEntry || !customExit) {
+            elements.scenariosTableBody.innerHTML = '<tr><td colspan="9" style="text-align: center; opacity: 0.7;">Enter both entry and exit prices to see analysis</td></tr>';
+            return;
+        }
+
+        const priceChangeUSD = customExit - customEntry;
+        const priceChangePercent = ((customExit - customEntry) / customEntry) * 100;
+        const pnl = isShortPosition 
+            ? (customEntry - customExit) * positionSize - tradingFee
+            : (customExit - customEntry) * positionSize - tradingFee;
+        const roi = (pnl / capitalUSD) * 100;
+        const pnlToCapitalPercent = (pnl / capitalUSD) * 100;
+        
+        const pnlClass = pnl >= 0 ? 'profit' : 'loss';
+        const direction = isShortPosition ? 'Short Position' : 'Long Position';
+        const priceChangeDisplay = (priceChangeUSD >= 0 ? '+' : '') + priceChangeUSD.toFixed(2);
+        const percentDisplay = (priceChangePercent >= 0 ? '+' : '') + priceChangePercent.toFixed(2) + '%';
+        
+        const scenariosHTML = `
+            <tr>
+                <td><strong>${direction}</strong></td>
+                <td>$${customEntry.toFixed(2)}</td>
+                <td>$${customExit.toFixed(2)}</td>
+                <td>${percentDisplay}</td>
+                <td>${priceChangeDisplay}</td>
+                <td class="${pnlClass}">$${pnl.toFixed(2)}</td>
+                <td class="${pnlClass}">₹${(pnl * currentExchangeRate).toFixed(2)}</td>
+                <td class="${pnlClass}">${roi.toFixed(2)}%</td>
+                <td class="${pnlClass}">${pnlToCapitalPercent.toFixed(2)}%</td>
+            </tr>
+        `;
+        
+        elements.scenariosTableBody.innerHTML = scenariosHTML;
     }
 
     function generateScenarios(positionSize, tradingFee) {
@@ -639,6 +861,7 @@
                 ? (entryPrice - positiveExitPrice) * positionSize - tradingFee
                 : (positiveExitPrice - entryPrice) * positionSize - tradingFee;
             let positiveROI = (positivePnL / capitalUSD) * 100;
+            let positivePnLToCapital = (positivePnL / capitalUSD) * 100;
 
             // Real USD Movement
             let posUsdMove = positiveExitPrice - entryPrice;
@@ -651,6 +874,7 @@
                 ? (entryPrice - negativeExitPrice) * positionSize - tradingFee
                 : (negativeExitPrice - entryPrice) * positionSize - tradingFee;
             let negativeROI = (negativePnL / capitalUSD) * 100;
+            let negativePnLToCapital = (negativePnL / capitalUSD) * 100;
 
             let negUsdMove = negativeExitPrice - entryPrice;
             let negUsdMoveDisp = (negUsdMove > 0 ? '+' : '') + negUsdMove.toFixed(2);
@@ -667,6 +891,7 @@
                     <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">$${positivePnL.toFixed(2)}</td>
                     <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">₹${(positivePnL * currentExchangeRate).toFixed(2)}</td>
                     <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">${positiveROI.toFixed(2)}%</td>
+                    <td class="${positivePnL >= 0 ? 'profit' : 'loss'}">${positivePnLToCapital.toFixed(2)}%</td>
                 </tr>
                 <tr>
                     <td>${negativeLabel}</td>
@@ -676,6 +901,7 @@
                     <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">$${negativePnL.toFixed(2)}</td>
                     <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">₹${(negativePnL * currentExchangeRate).toFixed(2)}</td>
                     <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">${negativeROI.toFixed(2)}%</td>
+                    <td class="${negativePnL >= 0 ? 'profit' : 'loss'}">${negativePnLToCapital.toFixed(2)}%</td>
                 </tr>
             `;
         }
@@ -687,126 +913,11 @@
         if (!elements.manualPriceToggle.checked) fetchCryptoPrices();
         else calculateAndDisplay();
     });
-    elements.capitalUSD.addEventListener('input', () => {
-        capitalUSD = parseFloat(elements.capitalUSD.value) || 0;
-        elements.capitalINR.value = (capitalUSD * currentExchangeRate).toFixed(2);
-        calculateAndDisplay();
-    });
-    elements.capitalINR.addEventListener('input', () => {
-        const val = parseFloat(elements.capitalINR.value) || 0;
-        capitalUSD = val / currentExchangeRate;
-        elements.capitalUSD.value = capitalUSD.toFixed(2);
-        calculateAndDisplay();
-    });
-    elements.directionToggle.addEventListener('click', () => {
-        isShortPosition = !isShortPosition;
-        elements.directionToggle.classList.toggle('active', isShortPosition);
-        calculateAndDisplay();
-    });
-    elements.orderTypeToggle.addEventListener('click', () => {
-        isMakerOrder = !isMakerOrder;
-        elements.orderTypeToggle.classList.toggle('active', isMakerOrder);
-        calculateAndDisplay();
-    });
-    elements.leverage.addEventListener('change', () => {
-        const value = elements.leverage.value;
-        if (value === 'custom') {
-            elements.customLeverage.style.display = 'block';
-            currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
-        } else {
-            elements.customLeverage.style.display = 'none';
-            currentLeverageValue = parseFloat(value);
-        }
-        elements.leverageWarning.style.display = currentLeverageValue >= 50 ? 'block' : 'none';
-        calculateAndDisplay();
-    });
-    elements.customLeverage.addEventListener('input', () => {
-        if (elements.leverage.value === 'custom') {
-            currentLeverageValue = parseFloat(elements.customLeverage.value) || 1;
-            elements.leverageWarning.style.display = currentLeverageValue >= 50 ? 'block' : 'none';
-            calculateAndDisplay();
-        }
-    });
-    elements.manualPriceToggle.addEventListener('change', () => {
-        if (elements.manualPriceToggle.checked) {
-            elements.entryPrice.readOnly = false;
-            elements.priceStatus.textContent = 'Manual Input';
-            elements.priceStatus.classList.remove('live-indicator');
-        } else {
-            elements.entryPrice.readOnly = true;
-            elements.priceStatus.textContent = '';
-            elements.priceStatus.classList.add('live-indicator');
-            fetchCryptoPrices();
-        }
-        calculateAndDisplay();
-    });
-    elements.entryPrice.addEventListener('input', () => {
-        if (elements.manualPriceToggle.checked) {
-            entryPrice = parseFloat(elements.entryPrice.value) || 0;
-            calculateAndDisplay();
-        }
-    });
-
-    async function fetchCryptoPrices() {
-        if (elements.manualPriceToggle.checked) return;
-        elements.priceStatus.textContent = '';
-        elements.priceStatus.classList.add('live-indicator');
-        try {
-            const contractId = elements.contract.value;
-            const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${contractId}&vs_currencies=usd`);
-            const data = await response.json();
-            entryPrice = data[contractId].usd;
-            elements.entryPrice.value = entryPrice.toFixed(2);
-            elements.priceStatus.textContent = '';
-            elements.priceStatus.classList.add('live-indicator');
-        } catch {
-            elements.priceStatus.textContent = '⚠ Error';
-            elements.priceStatus.classList.remove('live-indicator');
-        }
-        calculateAndDisplay();
-    }
-
-    async function fetchExchangeRate() {
-        try {
-            const response = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
-            const data = await response.json();
-            currentExchangeRate = data.usd.inr;
-        } catch {
-        }
-        elements.exchangeRateDisplay.textContent = `1 USD = ₹${currentExchangeRate.toFixed(2)}`;
-    }
-
-    function calculateAndDisplay() {
-        fetchExchangeRate();
-
-        if (!capitalUSD || !entryPrice || !currentLeverageValue) {
-            elements.results.style.display = 'none';
-            elements.scenariosTableBody.innerHTML = '';
-            return;
-        }
-
-        const positionValue = capitalUSD * currentLeverageValue;
-        const positionSizeTokens = positionValue / entryPrice;
-        const feeRate = isMakerOrder ? 0.0002 : 0.0005; 
-        const tradingFeeUSD = positionValue * feeRate;
-        const marginRequiredUSD = capitalUSD;
-
-        const liquidationBuffer = (1 / currentLeverageValue) * 0.9;
-        const liquidationPrice = isShortPosition 
-            ? entryPrice * (1 + liquidationBuffer)
-            : entryPrice * (1 - liquidationBuffer);
-
-        elements.currentLeverage.textContent = `${currentLeverageValue}x`;
-        elements.positionSize.textContent = `${positionSizeTokens.toFixed(6)} ${contractSymbols[elements.contract.value]}`;
-        elements.notionalValue.innerHTML = `$${positionValue.toLocaleString()}<span class="currency-display">₹${(positionValue * currentExchangeRate).toLocaleString()}</span>`;
-        elements.marginRequired.innerHTML = `$${marginRequiredUSD.toFixed(2)}<span class="currency-display">₹${(marginRequiredUSD * currentExchangeRate).toFixed(2)}</span>`;
-        elements.tradingFee.innerHTML = `$${tradingFeeUSD.toFixed(2)}<span class="currency-display">₹${(tradingFeeUSD * currentExchangeRate).toFixed(2)}</span>`;
-        elements.liquidationPrice.textContent = `$${liquidationPrice.toFixed(2)} (${isShortPosition ? '+' : '-'}${(liquidationBuffer * 100).toFixed(2)}%)`;
-
-        elements.results.style.display = 'block';
-
-        generateScenarios(positionSizeTokens, tradingFeeUSD);
-    }
+    elements.capitalUSD.addEventListener('input', syncCapitalUSD);
+    elements.capitalINR.addEventListener('input', syncCapitalINR);
+    elements.directionToggle.addEventListener('click', toggleDirection);
+    elements.orderTypeToggle.addEventListener('click', toggleOrderType);
+    elements.leverage.addEventListener('change', handleLeverageChange);
 
     // Initialize page
     fetchExchangeRate();
